@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "AudioBookBay Navigation Assistant",
-  "description": "Makes navigating AudioBookBay easier.",
+  "description": "Makes navigating AudioBookBay easier by using the arrow keys.",
   "version": "1.0.0",
   "content_scripts": [
     {
