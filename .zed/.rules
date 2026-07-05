@@ -1,0 +1,71 @@
+# Chrome Browser Extension Development Rules
+
+## Manifest Configuration
+- Always use manifest_version 3 (MV3) for new extensions
+- Include permissions only for APIs that are actually used
+- Use host_permissions sparingly and with specific patterns
+- Include action or page_action in manifest for extension icon/popup
+
+## File Structure
+- Keep manifest.json in the root directory
+- Place service workers in /background or /service-workers
+- Place content scripts in /content
+- Place popups/sidepanels in /ui or /pages
+- Keep assets in /images, /styles, /scripts directories
+
+## Service Workers (Background Scripts)
+- Service workers are the new background scripts for MV3
+- They unload after 5 minutes of inactivity
+- Use chrome.alarms for persistent timers, not setInterval
+- Store persistent state in chrome.storage, not memory
+- Handle chrome.runtime.onInstalled for initialization
+
+## Content Scripts
+- Inject only when necessary using matches/exclude_matches
+- Use isolated worlds to prevent conflicts with page scripts
+- Communicate with service workers via chrome.runtime.sendMessage
+- Never assume DOM elements exist; check before access
+- Avoid modifying global scope directly
+
+## Messaging & Communication
+- Use chrome.runtime.sendMessage for tab-to-service-worker
+- Use chrome.tabs.sendMessage for tab-to-content-script
+- Always handle response callbacks or use Promises
+- Include error handling for message failures
+- Use message ports for long-lived connections
+
+## Storage
+- Use chrome.storage.local for most data
+- Use chrome.storage.sync for user preferences across devices
+- Limit to 10MB per extension (sync storage: 100KB)
+- Always use async methods (promises/callbacks)
+- Handle storage quota limits gracefully
+
+## Permissions & Security
+- Request permissions only when needed
+- Use activeTab permission instead of broad host permissions
+- Never eval() or execute arbitrary code
+- Sanitize all user input before DOM insertion
+- Use Content Security Policy to prevent injection attacks
+
+## APIs to Avoid (MV2 Only)
+- chrome.extension.getBackgroundPage - use messaging instead
+- chrome.extension.onRequest - use chrome.runtime instead
+- Background pages - use service workers instead
+
+## Testing
+- Test with Chrome in Developer mode
+- Test with multiple extensions loaded
+- Verify permissions warnings are clear
+- Test service worker reload behavior
+- Check for memory leaks in long-running extensions
+
+## Common APIs
+- chrome.tabs.* for tab manipulation
+- chrome.windows.* for window management
+- chrome.storage.* for data persistence
+- chrome.alarms.* for scheduling
+- chrome.declarativeNetRequest.* for network filtering
+- chrome.contextMenus.* for right-click menus
+- chrome.notifications.* for user alerts
+- chrome.runtime.* for extension management
