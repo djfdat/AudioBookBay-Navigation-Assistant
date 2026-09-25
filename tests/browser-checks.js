@@ -34,6 +34,9 @@ async (page) => {
   const suggestions = await ui.getByLabel('Category 1', { exact: true }).evaluate(input => [...input.list.options].map(option => option.value));
   assert(JSON.stringify(suggestions) === '["Adults","Adventure","Full Cast","Historical Fiction"]', 'Category autocomplete uses sorted, deduplicated sidebar categories and excludes language links');
   await ui.getByLabel('Category 1', { exact: true }).fill('Adults');
+  await ui.getByLabel('Category 1', { exact: true }).press('Enter');
+  assert(await panel.isVisible() && await ui.getByLabel('Category 1', { exact: true }).inputValue() === 'Adults', 'Enter confirms a category edit without closing settings');
+  assert(await page.evaluate(() => localStorage.getItem('fixtureSettings')) === null, 'Enter in a filter field does not save the draft');
   await ui.getByLabel('Enable categories filter', { exact: true }).check();
   assert((await visible()).length === 3, 'Draft changes do not filter before Apply');
   await apply();
@@ -77,6 +80,8 @@ async (page) => {
   await ui.getByRole('button', { name: 'Remove category 2', exact: true }).click();
   await section('Bitrate');
   await ui.getByLabel('Bitrate: Minimum (Kbps)', { exact: true }).fill('400');
+  await ui.getByLabel('Bitrate: Minimum (Kbps)', { exact: true }).press('Enter');
+  assert(await panel.isVisible() && await ui.getByText('The upper bound must be at least the lower bound.', { exact: true }).isVisible(), 'Enter validates numeric edits without submitting settings');
   await apply();
   assert(await ui.getByText('The upper bound must be at least the lower bound.', { exact: true }).isVisible(), 'Reversed ranges show inline errors');
   await ui.getByRole('button', { name: 'Cancel', exact: true }).click();

@@ -172,6 +172,24 @@ const ABBNASettings = (() => {
       input.setAttribute("aria-describedby", error.id);
       container.append(error);
       fields.set(path, { input, error });
+      input.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" || event.isComposing || event.keyCode === 229) return;
+        event.preventDefault();
+        event.stopPropagation();
+        const errors = ABBNAFilters.validate(draft);
+        const groupPrefix = `${path.split(".")[0]}.`;
+        let firstInvalid;
+        for (const [fieldPath, field] of fields) {
+          if (!fieldPath.startsWith(groupPrefix)) continue;
+          field.error.textContent = errors[fieldPath] || "";
+          field.input.setAttribute("aria-invalid", String(Boolean(errors[fieldPath])));
+          if (errors[fieldPath] && !firstInvalid) firstInvalid = field.input;
+        }
+        // Values already belong to the draft via input events. Enter completes
+        // this edit without submitting the form or changing the applied filters.
+        if (firstInvalid) firstInvalid.focus();
+        else input.blur();
+      });
     }
 
     function render() {
