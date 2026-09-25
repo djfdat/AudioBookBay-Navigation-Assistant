@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AudioBookBay listing fixture</title>
+<style>
+  body { margin: 80px auto; max-width: 760px; font: 16px Georgia, serif; background: #eeeae2; }
+  .post { padding: 24px; margin: 24px 0; background: white; min-height: 300px; }
+  /* Deliberately hostile host styles: these must not leak into the settings. */
+  button { background: red; font-size: 40px; } input { width: 600px; }
+</style>
+<h1>Audiobook listings</h1>
+<input aria-label="Site search" placeholder="Search">
+<div id="content">
+  <div class="post" id="first">
+    <div class="postTitle"><h2>Harbour Lights - Ada Example</h2></div>
+    <div class="postInfo">Category: Adults&nbsp; Historical Fiction&nbsp; <br>Language: English<span>Keywords: Coastal Mystery&nbsp; Family&nbsp; </span><br></div>
+    <div class="postContent"><div class="center"><p class="center">Shared by:<a href="#uploader">Wrong Author</a></p></div><p>Posted: 25 Sep 2026<br>Format: <span>M4B</span> / Bitrate: <span>128 Kbps</span><br>File Size: <span>500</span> MBs</p></div>
+  </div>
+  <div class="post" id="second" style="display: block !important">
+    <div class="postTitle"><h2>The Long Walk - Ben Example</h2></div>
+    <div class="postInfo">Category: Adventure&nbsp; <br>Language: French<span>Keywords: Travel&nbsp; </span><br></div>
+    <div class="postContent"><p>Posted: 24 Sep 2026<br>Format: <span>MP3</span> / Bitrate: <span>64 Kbps</span><br>File Size: <span>1.2</span> GBs</p></div>
+  </div>
+  <div class="post" id="third"><div class="postTitle"><h2>Incomplete entry</h2></div></div>
+</div>
+<div class="wp-pagenavi"><a href="#previous">«</a> <a href="#next">»</a></div>
+<script>
+  const fixtureOptions = new URLSearchParams(location.search);
+  window.fixture = { clicks: [], failSave: false, failLoad: fixtureOptions.has('fail-load'), scrolls: [] };
+  if (fixtureOptions.has('no-pagination')) document.querySelector('.wp-pagenavi').remove();
+  if (fixtureOptions.has('empty')) document.querySelectorAll('.post').forEach(post => post.remove());
+  window.browser = { storage: { local: {
+    async get() {
+      if (fixture.failLoad) throw new Error('Load unavailable');
+      return JSON.parse(localStorage.getItem('fixtureSettings') || '{}');
+    },
+    async set(value) {
+      if (fixture.failSave) throw new Error('Storage unavailable');
+      localStorage.setItem('fixtureSettings', JSON.stringify(value));
+    }
+  } } };
+  document.querySelectorAll('.wp-pagenavi a').forEach(link => link.addEventListener('click', event => {
+    event.preventDefault();
+    fixture.clicks.push({ target: link.hash, saved: JSON.parse(localStorage.getItem('fixtureSettings') || '{}') });
+  }));
+  Element.prototype.scrollIntoView = function () { fixture.scrolls.push(this.id); };
+</script>
+<script src="../../abbna-filters.js"></script>
+<script src="../../abbna-settings.js"></script>
+<script src="../../abbna.js"></script>
+</html>

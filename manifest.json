@@ -3,6 +3,12 @@
   "name": "AudioBookBay Navigation Assistant",
   "description": "Makes navigating AudioBookBay easier by using the arrow keys.",
   "version": "1.0.0",
+  "permissions": ["storage"],
+  "browser_specific_settings": {
+    "gecko": {
+      "strict_min_version": "125.0"
+    }
+  },
   "content_scripts": [
     {
       "matches": [
@@ -11,7 +17,7 @@
         "*://*.audiobookbay.is/*",
         "*://*.audiobookbay.se/*"
       ],
-      "js": ["abbna.js"]
+      "js": ["abbna-filters.js", "abbna-settings.js", "abbna.js"]
     }
   ]
 }
