@@ -48,6 +48,7 @@ const ABBNASettings = (() => {
         border: 1px solid var(--abb-border); border-radius: 14px; background: var(--abb-surface);
         color: var(--abb-text); box-shadow: 0 12px 48px #173c3a26;
         font: 14px/1.5 system-ui, sans-serif; text-align: left; }
+      .panel::backdrop { background: #173c3a26; }
       header { padding: 22px 22px 16px; background: var(--abb-tint); border-bottom: 1px solid var(--abb-divider); }
       h2 { color: var(--abb-red); margin: 0 0 4px; font-size: 19px; font-weight: 650; letter-spacing: -.4px; }
       p { margin: 0; }
@@ -58,11 +59,15 @@ const ABBNASettings = (() => {
       details { border-top: 1px solid var(--abb-divider); }
       .sections > details:first-child { border-top: 0; }
       summary { display: flex; align-items: center; gap: 10px; cursor: pointer;
+        user-select: none;
         min-height: 48px; padding: 10px 0; font-weight: 600; list-style: none; }
       summary::-webkit-details-marker { display: none; }
       summary::before { content: '+'; width: 12px; color: var(--abb-muted); font-weight: 400; }
       details[open] > summary::before { content: '−'; }
       .badge { margin-left: auto; font-size: 11px; font-weight: 500; color: var(--abb-muted); }
+      .badge { text-align: right; }
+      .context { font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+      details[open] > summary .context { display: none; }
       .badge.on { color: var(--abb-accent); }
       .body { padding: 0 0 18px; }
       .check { display: flex; align-items: center; gap: 8px; min-height: 36px; cursor: pointer; }
@@ -111,16 +116,18 @@ const ABBNASettings = (() => {
       if (text !== undefined) node.textContent = text;
       return node;
     }
-    const gear = element("button", { type: "button", class: "gear", "aria-label": "Open AudioBookBay settings", "aria-haspopup": "dialog", "aria-expanded": "false", title: "AudioBookBay settings" });
+    const gear = element("button", { type: "button", class: "gear", "aria-label": "Open AudioBookBay settings", "aria-haspopup": "dialog", "aria-expanded": "false", title: "AudioBookBay Navigation Assistant settings" });
     // Static icon only; all editable and page-provided text uses textContent/value.
-    gear.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9.5 3-.6 2.1-1.8 1L5 5.6 2.5 10l1.5 1.6v2L2.5 15 5 19.4l2.1-.5 1.8 1 .6 2.1h5l.6-2.1 1.8-1 2.1.5 2.5-4.4-1.5-1.4v-2L21.5 10 19 5.6l-2.1.5-1.8-1L14.5 3z"/><circle cx="12" cy="12.5" r="3.3"/></svg>';
-    const panel = element("div", { id: "settings-panel", class: "panel", popover: "auto", role: "dialog", "aria-labelledby": "settings-title" });
+    const gearIcon = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9.5 3-.6 2.1-1.8 1L5 5.6 2.5 10l1.5 1.6v2L2.5 15 5 19.4l2.1-.5 1.8 1 .6 2.1h5l.6-2.1 1.8-1 2.1.5 2.5-4.4-1.5-1.4v-2L21.5 10 19 5.6l-2.1.5-1.8-1L14.5 3z"/><circle cx="12" cy="12.5" r="3.3"/></svg>';
+    const closeIcon = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>';
+    gear.innerHTML = gearIcon;
+    const panel = element("dialog", { id: "settings-panel", class: "panel", "aria-labelledby": "settings-title" });
     gear.setAttribute("aria-controls", panel.id);
-    gear.popoverTargetElement = panel;
+    gear.addEventListener("click", () => panel.open ? panel.close() : openSettings());
     const empty = element("div", { class: "empty", hidden: "", role: "status" });
     empty.append(element("span", {}, "No entries match your filters."));
     const adjust = element("button", { type: "button" }, "Adjust settings");
-    adjust.addEventListener("click", () => panel.showPopover());
+    adjust.addEventListener("click", () => openSettings());
     empty.append(adjust);
     root.append(gear, panel, empty);
     document.body.append(host);
@@ -129,9 +136,27 @@ const ABBNASettings = (() => {
     let form;
     let saveError;
     let saving = false;
-    let retainDraft = false;
-    let statusText = "";
     const fields = new Map();
+
+    function filterCountLabel() {
+      const count = Object.keys(labels).filter((key) => draft[key].enabled).length;
+      return `${count} filter ${count === 1 ? "type" : "types"} enabled`;
+    }
+
+    function filterSummary(key, group) {
+      if (group.items) return `${group.items.filter((item) => item.enabled).length}/${group.items.length}`;
+      const { min, max } = group;
+      const errors = ABBNAFilters.validate({ ...ABBNAFilters.defaults(), [key]: group });
+      if (Object.keys(errors).length) return "Check range";
+      const format = (value) => key === "dates"
+        ? new Intl.DateTimeFormat(undefined, { year: "2-digit", month: "numeric", day: "numeric", timeZone: "UTC" }).format(new Date(`${value}T00:00:00Z`))
+        : String(value);
+      const units = key === "bitrate" ? " Kbps" : key === "size" ? " MB" : "";
+      if (min === "" && max === "") return key === "dates" ? "Any date" : key === "bitrate" ? "Any bitrate" : "Any size";
+      if (min === "") return `≤ ${format(max)}${units}`;
+      if (max === "") return `≥ ${format(min)}${units}`;
+      return `${format(min)}${min === max ? "" : `–${format(max)}`}${units}`;
+    }
 
     function checkbox(text, value, onChange) {
       const label = element("label", { class: "check" });
@@ -152,8 +177,20 @@ const ABBNASettings = (() => {
     function render() {
       fields.clear();
       panel.replaceChildren();
+      // Include age and category modifiers from the same sidebar taxonomy.
+      // The datalist must share the input's shadow root to resolve its list attribute.
+      const categorySuggestions = element("datalist", { id: "abbna-category-suggestions" });
+      const categories = new Map();
+      for (const link of document.querySelectorAll('#lsidebar a[href*="/audio-books/type/"]')) {
+        const value = link.textContent.trim().replace(/\s+/g, " ");
+        if (value && !categories.has(value.toLowerCase())) categories.set(value.toLowerCase(), value);
+      }
+      for (const value of [...categories.values()].sort((a, b) => a.localeCompare(b))) {
+        categorySuggestions.append(element("option", { value }));
+      }
+      panel.append(categorySuggestions);
       const header = element("header");
-      header.append(element("h2", { id: "settings-title" }, "Settings"), element("p", { class: "muted" }, "AudioBookBay · Filters & navigation"), element("p", { class: "count", role: "status" }, statusText));
+      header.append(element("h2", { id: "settings-title" }, "Settings"), element("p", { class: "muted" }, "AudioBookBay Navigation Assistant Settings"), element("p", { class: "count", role: "status" }, filterCountLabel()));
       panel.append(header);
       if (warning) panel.append(element("p", { class: "notice", role: "status" }, warning));
       form = element("form", { novalidate: "" });
@@ -167,13 +204,28 @@ const ABBNASettings = (() => {
         const group = draft[key];
         const details = element("details");
         const summary = element("summary", {}, title);
-        const badge = element("span", { class: `badge${group.enabled ? " on" : ""}` }, group.enabled ? "On" : "Off");
+        const badge = element("span", { class: "badge" });
+        const status = element("span");
+        const context = element("span", { class: "context" });
+        badge.append(status, context);
+        const updateBadge = () => {
+          status.textContent = group.enabled ? "On" : "Off";
+          badge.classList.toggle("on", group.enabled);
+          context.hidden = !group.enabled;
+          context.textContent = group.enabled ? ` · ${filterSummary(key, group)}` : "";
+          if (key === "bitrate" || key === "size") {
+            context.title = `Unknown ${title.toLowerCase()} ${group.allowUnknown ? "allowed" : "excluded"}`;
+          }
+        };
+        updateBadge();
+        details.addEventListener("input", updateBadge);
+        details.addEventListener("change", updateBadge);
         summary.append(badge);
         const body = element("div", { class: "body" });
         body.append(checkbox(`Enable ${title.toLowerCase()} filter`, group.enabled, (checked) => {
           group.enabled = checked;
-          badge.textContent = checked ? "On" : "Off";
-          badge.classList.toggle("on", checked);
+          panel.querySelector(".count").textContent = filterCountLabel();
+          updateBadge();
         }), element("p", { class: "hint" }, hint));
         details.append(summary, body);
         sections.append(details);
@@ -189,6 +241,7 @@ const ABBNASettings = (() => {
               toggle.checked = item.enabled;
               toggle.addEventListener("change", () => { item.enabled = toggle.checked; });
               const input = element("input", { type: "text", "aria-label": `${singular} ${index + 1}`, autocomplete: "off", spellcheck: "false" });
+              if (key === "categories") input.setAttribute("list", categorySuggestions.id);
               input.value = item.value;
               input.addEventListener("input", () => { item.value = input.value; });
               const remove = element("button", { type: "button", class: "remove", "aria-label": `Remove ${singular.toLowerCase()} ${index + 1}` }, "×");
@@ -201,6 +254,7 @@ const ABBNASettings = (() => {
               register(input, `${key}.${index}`, row);
               list.append(row);
             });
+            updateBadge();
           };
           const add = element("button", { type: "button", class: "add" }, `+ Add ${singular.toLowerCase()}`);
           add.addEventListener("click", () => {
@@ -229,7 +283,7 @@ const ABBNASettings = (() => {
           if (key !== "dates") body.append(checkbox(`Allow unknown ${title.toLowerCase()}`, group.allowUnknown, (checked) => { group.allowUnknown = checked; }));
         }
       }
-      const navigation = element("details");
+      const navigation = element("details", { open: "" });
       const navigationBody = element("div", { class: "body" });
       navigationBody.append(
         checkbox("Skip pages with no matching entries", draft.navigation.skipEmpty, (checked) => { draft.navigation.skipEmpty = checked; }),
@@ -237,11 +291,11 @@ const ABBNASettings = (() => {
         element("p", { class: "hint" }, "Arrow keys navigate entries and pages outside editable controls. Applying filters can skip to the next page."),
       );
       navigation.append(element("summary", {}, "Navigation"), navigationBody);
-      sections.append(navigation);
+      sections.prepend(navigation);
       const footer = element("footer");
       saveError = element("p", { class: "error", role: "alert" });
       const cancel = element("button", { type: "button", class: "cancel" }, "Cancel");
-      cancel.addEventListener("click", () => panel.hidePopover());
+      cancel.addEventListener("click", () => panel.close());
       const apply = element("button", { type: "submit", class: "apply" }, "Apply");
       footer.append(saveError, cancel, apply);
       fieldset.append(footer);
@@ -268,12 +322,9 @@ const ABBNASettings = (() => {
         try {
           await save(ABBNAFilters.restore(draft));
           warning = "";
-          panel.hidePopover();
+          panel.close();
         } catch {
-          if (!panel.matches(":popover-open")) {
-            retainDraft = true;
-            panel.showPopover();
-          }
+          if (!panel.open) openSettings(true);
           saveError.textContent = "Settings could not be saved. Your edits are still here. Try Apply again.";
         } finally {
           saving = false;
@@ -284,23 +335,57 @@ const ABBNASettings = (() => {
       });
     }
 
-    panel.addEventListener("beforetoggle", (event) => {
-      gear.setAttribute("aria-expanded", String(event.newState === "open"));
-      if (event.newState === "open") {
-        if (!retainDraft && !saving) {
-          draft = structuredClone(getSettings());
-          render();
-        }
-        retainDraft = false;
+    function openSettings(keepDraft = false) {
+      if (panel.open) return;
+      if (!keepDraft && !saving) {
+        draft = structuredClone(getSettings());
+        render();
       }
+      // Keep the close control inside the modal's interactive subtree and top layer.
+      panel.prepend(gear);
+      gear.innerHTML = closeIcon;
+      gear.setAttribute("aria-label", "Close settings");
+      gear.setAttribute("aria-expanded", "true");
+      gear.removeAttribute("title");
+      gear.removeAttribute("aria-haspopup");
+      panel.showModal();
+    }
+
+    panel.addEventListener("close", () => {
+      if (panel.open) return;
+      root.append(gear);
+      gear.innerHTML = gearIcon;
+      gear.setAttribute("aria-label", "Open AudioBookBay settings");
+      gear.setAttribute("aria-expanded", "false");
+      gear.setAttribute("aria-haspopup", "dialog");
+      gear.setAttribute("title", "AudioBookBay Navigation Assistant settings");
+      gear.focus();
+    });
+    // The native dialog makes the page inert. Backdrop clicks target the dialog;
+    // close only after a complete outside click, never on pointerdown (which
+    // would let the ensuing click reach the page) or a drag out of a control.
+    const isOutside = (event) => {
+      const bounds = panel.getBoundingClientRect();
+      return event.clientX < bounds.left || event.clientX > bounds.right ||
+        event.clientY < bounds.top || event.clientY > bounds.bottom;
+    };
+    let startedOutside = false;
+    panel.addEventListener("pointerdown", (event) => {
+      startedOutside = event.target === panel && isOutside(event);
+      event.stopPropagation();
+    });
+    panel.addEventListener("click", (event) => {
+      event.stopPropagation();
+      if (startedOutside && event.target === panel && isOutside(event)) {
+        event.preventDefault();
+        panel.close();
+      }
+      startedOutside = false;
     });
     return {
       host,
-      isOpen: () => panel.matches(":popover-open"),
+      isOpen: () => panel.open,
       update(visible, total) {
-        statusText = total ? `${visible} of ${total} entries shown` : "No listings on this page";
-        const count = panel.querySelector(".count");
-        if (count) count.textContent = statusText;
         empty.hidden = !total || visible > 0;
       },
     };

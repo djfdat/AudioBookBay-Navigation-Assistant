@@ -10,6 +10,7 @@
   button { background: red; font-size: 40px; } input { width: 600px; }
 </style>
 <h1>Audiobook listings</h1>
+<button id="background-action" type="button" style="position:fixed;right:16px;top:16px;font-size:14px">Page action</button>
 <input aria-label="Site search" placeholder="Search">
 <div id="content">
   <div class="post" id="first">
@@ -25,11 +26,20 @@
   <div class="post" id="third"><div class="postTitle"><h2>Incomplete entry</h2></div></div>
 </div>
 <div class="wp-pagenavi"><a href="#previous">«</a> <a href="#next">»</a></div>
+<aside id="lsidebar">
+  <a href="/audio-books/type/adults/">Adults</a>
+  <a href="/audio-books/type/adventure/">Adventure</a>
+  <a href="/audio-books/type/historical-fiction/">Historical Fiction</a>
+  <a href="/audio-books/type/historical-fiction/"> historical   fiction </a>
+  <a href="/audio-books/type/full-cast/">Full Cast</a>
+  <a href="/audio-books/tag/english/">English</a>
+</aside>
 <script>
   const fixtureOptions = new URLSearchParams(location.search);
-  window.fixture = { clicks: [], failSave: false, failLoad: fixtureOptions.has('fail-load'), scrolls: [] };
+  window.fixture = { backgroundClicks: 0, clicks: [], failSave: false, failLoad: fixtureOptions.has('fail-load'), scrolls: [] };
   if (fixtureOptions.has('no-pagination')) document.querySelector('.wp-pagenavi').remove();
   if (fixtureOptions.has('empty')) document.querySelectorAll('.post').forEach(post => post.remove());
+  document.querySelector('#background-action').addEventListener('click', () => { fixture.backgroundClicks++; });
   window.browser = { storage: { local: {
     async get() {
       if (fixture.failLoad) throw new Error('Load unavailable');

@@ -4,7 +4,7 @@ Makes it easier to navigate AudioBookBay listings with configurable filters and 
 
 ## Settings
 
-Click the fixed gear in the top-left corner of any supported page. Expand a section to configure it, then choose **Apply** to save and update the current listing without a reload. **Cancel**, Escape, or clicking outside the popover discards unapplied edits.
+Click the fixed gear in the top-left corner of any supported page. Expand a section to configure it, then choose **Apply** to save and update the current listing without a reload. **Cancel**, Escape, or clicking outside the settings dialog discards unapplied edits. While settings is open, the page is inert and keyboard focus stays inside the dialog; outside clicks close settings without activating page controls.
 
 Settings are saved locally in Firefox's extension storage, shared across the supported AudioBookBay domains, and retained between browsing sessions. They are not synced between devices. If saving fails, your draft stays open and the existing filters remain applied.
 
@@ -21,11 +21,13 @@ New installations start with **all filters disabled and all lists empty**. Each 
 | File size | Inclusive minimum/maximum in MB, with an option to allow unknown values. |
 | Dates | Inclusive earliest/latest posting dates. Unknown or invalid listing dates are allowed. |
 
+Category inputs offer native autocomplete suggestions from the current page’s sidebar, including age categories and category modifiers. Suggestions are sorted and deduplicated; you can still enter a custom category or type normally when the sidebar is unavailable.
+
 Text matching ignores case and extra whitespace. An empty list, or a list with no enabled items, imposes no restriction. Missing text does not match exclusions, but fails an enabled, nonempty language or format allowlist. All enabled groups must pass for an entry to remain visible.
 
 Blank range bounds mean no limit. The inactive presets are 128–320 Kbps and 10–1000 MB, with unknown values allowed; dates start blank. File sizes use decimal MB (1 MB = 1,000,000 bytes), with B/KB/MB/GB/TB and binary KiB/MiB/GiB/TiB converted before comparison. Blank or duplicate list items, negative/invalid numbers, and reversed ranges must be corrected before saving.
 
-Filtered entries are hidden in place and restored in their original order when filters change. The popover displays the number of visible entries.
+Filtered entries are hidden in place and restored in their original order when filters change. The settings header shows the number of enabled filter types and updates as you toggle groups. Individual list items and navigation options do not count as filter types. Collapsed enabled groups show compact summaries: enabled/total items for lists, ranges with units for bitrate and size, and short dates for date filters. Blank bounds show a one-sided limit or an unrestricted range.
 
 ## Navigation
 
@@ -39,7 +41,7 @@ Arrow shortcuts are inactive while the popover is open, inside editable/form con
 
 ## Development and verification
 
-Load `manifest.json` as a temporary add-on using Firefox's `about:debugging`. The native Popover API requires Firefox 125 or newer. No build step or runtime dependency is needed.
+Load `manifest.json` as a temporary add-on using Firefox's `about:debugging`. The extension targets Firefox 125 or newer and uses a native modal dialog for settings. No build step or runtime dependency is needed.
 
 Run the parser, matching, validation, and settings recovery tests with Node.js:
 
